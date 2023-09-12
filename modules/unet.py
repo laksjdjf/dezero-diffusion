@@ -103,9 +103,9 @@ class UNet(Model):
         context_embs = []
         for i in range(num_blocks):
             if i == 0:
-                context_embs.append(L.Linear(hidden_channels))
+                context_embs.append(L.EmbedID(self.context_dim, hidden_channels))
             else:
-                context_embs.append(L.Linear(hidden_channels*(2**(i-1))))
+                context_embs.append(L.EmbedID(self.context_dim, hidden_channels*(2**(i-1))))
         self.context_embs = Sequential(*context_embs)
 
         self.down_blocks = Sequential(
@@ -122,11 +122,10 @@ class UNet(Model):
 
     def forward(self, x, t, c):
         t = t.astype(xp.float32) / 1000 # [0,1000] -> [0,1]
-        context = xp.eye(self.context_dim)[c] # one hot vector化
         h = self.conv_in(x)
         hs = [h] # skip connection
         for down_block, time_emb, context_emb in zip(self.down_blocks.layers, self.time_embs.layers, self.context_embs.layers):
-            emb = time_emb(t) + context_emb(context) # 時刻埋め込み、ラベル埋め込み
+            emb = time_emb(t) + context_emb(c) # 時刻埋め込み、ラベル埋め込み
             emb = expand_2d(emb)
             h = down_block(h + emb)
             hs.append(h) # skip connection
