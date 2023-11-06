@@ -17,7 +17,7 @@ class Diffusion:
         self.unet.to_gpu()
         self.sampler = sampler
 
-    def generate(self, context, channels, height, width):
+    def generate(self, context, channels, height, width, cfg_scale = 1.0):
         '''
         画像生成を行うメソッド。
         
@@ -29,6 +29,9 @@ class Diffusion:
                 x = xp.random.randn(batch_size, channels, height, width) # 初期ノイズ x_0
                 for t in tqdm(reversed(range(1000)), total=1000): # t = 999, ..., 0
                     noise_pred = self.unet(x, xp.array([[t]]*batch_size).astype(xp.int32), context) # ノイズ予測
+                    if cfg_scale != 1.0:
+                        noise_pred_uncond = self.unet(x, xp.array([[t]]*batch_size).astype(xp.int32), context * 0) # ノイズ予測
+                        noise_pred = noise_pred * cfg_scale + noise_pred_uncond * (1 - cfg_scale)
                     x = self.sampler.step(x, noise_pred, t) # x_{t+1} -> x_{t}
 
         images = []
@@ -41,19 +44,19 @@ class Diffusion:
         return images
     
 
-    def generate_grid(self, num_images, channels, height, width, image_path):
+    def generate_grid(self, num_images, channels, height, width, image_path, id2label, cfg_scale = 1.0):
         '''
         生成画像をラベルごとにグリッド状に並べて保存するメソッド。
         '''
         num_labels = self.unet.context_dim
         fig, axes = plt.subplots(num_labels, num_images, figsize=(7, 14))
-        images = self.generate(xp.arange(num_labels).repeat(num_images),channels, height, width)
+        images = self.generate(xp.eye(num_labels).repeat(num_images, axis=0),channels, height, width, cfg_scale)
         for i in range(num_labels):
             for j in range(num_images):
                 axes[i, j].imshow(images[i*num_images+j], cmap='gray')
                 axes[i, j].axis('off')
 
-            axes[i, 0].text(-10, 14, f'{i}', fontsize=12, verticalalignment='center')
+            axes[i, 0].text(-0.3, 0.5, f'{id2label[i]}', fontsize=12, verticalalignment='center', horizontalalignment='right', transform=axes[i, 0].transAxes)
         fig.savefig(image_path)
 
     def train_step(self, image, context):

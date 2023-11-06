@@ -9,10 +9,10 @@ ddpm = DDPM()
 diffusion = Diffusion(unet, ddpm)
 trainer = Trainer(
     diffusion,
-    batch_size=128,
-    lr = 1e-4,
+    batch_size=256,
+    lr = 1e-5,
     output_dir="mnist",
     dataset=dataset
 )
 
-trainer.train(100)
+trainer.train(20, save_n_epochs=5)
