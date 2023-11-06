@@ -1,2 +1,2 @@
 # dezero-diffusion
-拡散モデルのdezeroによる実装
+拡散モデルのdezeroによる実装です。mnistはうまくいくけどcifar10はうまくいかないみたい。
