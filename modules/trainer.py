@@ -12,9 +12,9 @@ class Trainer:
         self.diffusion = diffusion
         self.ucg = ucg
         if dataset == "mnist":
-            self.train_set = dezero.datasets.MNIST(train=True, transform=Compose([ToFloat(), Normalize(127.5, 255.)]),)
+            self.train_set = dezero.datasets.MNIST(train=True, transform=Compose([ToFloat(), Normalize(127.5, 127.5)]),)
         elif dataset == "cifar10":
-            self.train_set = dezero.datasets.CIFAR10(train=True, transform=Compose([ToFloat(), Normalize(127.5, 255.)]),)
+            self.train_set = dezero.datasets.CIFAR10(train=True, transform=Compose([ToFloat(), Normalize(127.5, 127.5)]),)
         else:
             raise ValueError(f"{dataset} is not supported.")
         
@@ -31,7 +31,7 @@ class Trainer:
         os.makedirs(self.image_dir, exist_ok=True)
         os.makedirs(self.log_dir, exist_ok=True)
 
-    def train(self, epochs, save_n_epochs=5, limited_steps=10000000):
+    def train(self, epochs, save_n_epochs=5, sample_cfg_scale=3.0, limited_steps=10000000):
         progress_bar = tqdm(range(epochs*len(self.train_set)//self.batch_size), desc="Total Steps", leave=False)
         loss_ema = None
         loss_emas = []
@@ -64,4 +64,4 @@ class Trainer:
                 self.diffusion.unet.save_weights(os.path.join(self.output_dir, f"model_{epoch:02}.npz"))
                 self.diffusion.unet.to_gpu()  # セーブ時にcpuに移動してしまう仕様
                 np.save(os.path.join(self.log_dir, f"log_{epoch:02}.npy"), np.array(loss_emas))
-                self.diffusion.generate_grid(4, x.shape[1], x.shape[2], x.shape[3], os.path.join(self.image_dir, f"image_{epoch:02}.png"), self.train_set.labels(), cfg_scale=3.0)
+                self.diffusion.generate_grid(4, x.shape[1], x.shape[2], x.shape[3], os.path.join(self.image_dir, f"image_{epoch:02}.png"), self.train_set.labels(), cfg_scale=sample_cfg_scale)
